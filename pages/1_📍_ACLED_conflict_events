@@ -1,0 +1,157 @@
+import streamlit as st
+import geopandas as gpd
+import pandas as pd
+import requests
+from shapely.geometry import Point
+import os
+import leafmap.foliumap as leafmap
+
+st.set_page_config(layout="wide")
+
+# Cache loading of countries dict: name -> ISO3
+@st.cache_data(show_spinner=False)
+def load_country_dict():
+    world = gpd.read_file("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+    return dict(zip(world['name'], world['ISO3166-1-Alpha-3']))
+
+
+# Attempt to load local .env file, if available (only applies locally)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not installed or not needed on cloud
+    pass
+
+# Now load environment variables
+api_key = os.getenv("ACLED_API_KEY")
+email = os.getenv("ACLED_EMAIL")
+
+if not api_key or not email:
+    raise ValueError("Missing ACLED_API_KEY or ACLED_EMAIL environment variables.")
+
+
+def get_conflict(period, iso3):
+    start_date_str, end_date_str = period.split('/')
+    start_date = pd.to_datetime(start_date_str).strftime('%Y-%m-%d')
+    end_date = pd.to_datetime(end_date_str).strftime('%Y-%m-%d')
+
+    url = (
+        f'https://api.acleddata.com/acled/read?'
+        f'key={api_key}&email={email}&'
+        f'country={iso3}&limit=15000'
+    )
+    response = requests.get(url)
+    if response.status_code != 200:
+        st.error(f'ACLED API request failed with status code: {response.status_code}')
+        return None
+
+    data = response.json()
+    if 'data' not in data:
+        st.error("No 'data' key in ACLED API response.")
+        return None
+
+    formatted_data = []
+    for record in data['data']:
+        event_date = record.get('event_date', '')
+        year, month, day = (event_date.split('-') + [None, None, None])[:3]
+        formatted_record = {
+            'event_id_cnty': record.get('event_id_cnty'),
+            'event_date': event_date,
+            'year': int(year) if year else None,
+            'month': int(month) if month else None,
+            'day': int(day) if day else None,
+            'actor1': record.get('actor1'),
+            'actor2': record.get('actor2'),
+            'interaction': record.get('interaction'),
+            'country': record.get('country'),
+            'admin1': record.get('admin1'),
+            'admin2': record.get('admin2'),
+            'admin3': record.get('admin3'),
+            'location': record.get('location'),
+            'fatalities': int(record.get('fatalities', 0)),
+            'latitude': float(record.get('latitude', 0)),
+            'longitude': float(record.get('longitude', 0)),
+            'geo_precision': record.get('geo_precision'),
+            'iso3': record.get('iso3'),
+        }
+        formatted_data.append(formatted_record)
+
+    df = pd.DataFrame(formatted_data)
+    df['event_date'] = pd.to_datetime(df['event_date'], errors='coerce')
+    df_period = df[df['event_date'].between(start_date, end_date)].copy()
+
+    geometry = [Point(xy) for xy in zip(df_period['longitude'], df_period['latitude'])]
+    gdf = gpd.GeoDataFrame(df_period, geometry=geometry, crs='EPSG:4326')
+
+
+    mask_gdf = mask_gdf.to_crs(gdf.crs)
+    
+    mask_gdf = get_mask_for_iso3(iso3)
+
+    # Clip points to mask
+    geo_acled = gpd.clip(gdf, mask_gdf)
+
+    if geo_acled.empty:
+        st.warning("No conflict events found within the selected mask and period.")
+        return None
+
+    geo_acled['event_date'] = geo_acled['event_date'].dt.strftime('%Y-%m-%d')
+
+    return geo_acled
+
+def get_mask_for_iso3(iso3):
+        url = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson"
+        countries = gpd.read_file(url)
+        country_mask = countries[countries['ISO3166-1-Alpha-3'] == iso3]
+        if country_mask.empty:
+            raise ValueError(f"No country found with ISO3 code {iso3}")
+        return country_mask
+
+def main():
+    st.title("Conflict Data Viewer")
+
+    # Load country dictionary
+    country_dict = load_country_dict()
+
+    # Streamlit widgets
+    selected_country = st.selectbox("Select a country", sorted(country_dict.keys()))
+    selected_iso3 = country_dict.get(selected_country)
+
+    #st.write(f"Selected country: **{selected_country}**")
+    st.write(f"ISO3 code (for mask): **{selected_iso3}**")
+
+    # Date range selector (period)
+    start_date, end_date = st.date_input(
+        "Select date range",
+        value=[pd.to_datetime("2023-01-01"), pd.to_datetime("2023-12-31")],
+        max_value=pd.Timestamp.today()
+    )
+    # Convert dates to string format for API (YYYY-MM-DD/YYYY-MM-DD)
+    period = f"{start_date.strftime('%Y-%m-%d')}/{end_date.strftime('%Y-%m-%d')}"
+
+   
+
+    fetch_data = st.button("Fetch conflict data")
+
+    if fetch_data:
+        geojson = get_conflict(period, selected_country, selected_iso3)
+        if geojson is not None:
+            st.success(f"Fetched {len(geojson)} conflict events.")
+            # Show heatmap with leafmap
+            m = leafmap.Map(center=[0, 20], zoom=4)
+            m.add_heatmap(
+                geojson,
+                latitude="latitude",
+                longitude="longitude",
+                value="fatalities",
+                name="Conflict Heatmap",
+                radius=20,
+            )
+            m.to_streamlit(height=700)
+
+
+if __name__ == "__main__":
+    main()
+
+
