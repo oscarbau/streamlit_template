@@ -5,7 +5,7 @@ import requests
 from shapely.geometry import Point
 import os
 import leafmap.foliumap as leafmap
-
+import folium
 
 
 def load_country_dict():
