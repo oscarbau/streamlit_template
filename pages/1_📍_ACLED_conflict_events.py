@@ -175,7 +175,7 @@ def main():
         center_latlon = st.session_state["center_latlon"]
 
         def get_color(value):
-            return "red" if value > 0 else "green"
+            return "red" if value > 0 else "black"
 
 
         m = leafmap.Map(center=center_latlon, zoom=4)
