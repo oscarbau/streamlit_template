@@ -82,7 +82,7 @@ Follow these steps to explore conflict events using the app:
 
 ---
 
-✅ **Data Source**: [ACLED API](https://acleddata.com)
+✅ **Data Source**: [ACLED](https://acleddata.com)
 
 🗺️ **Technologies Used**: [Streamlit](https://streamlit.io/), 
 [Leafmap](https://leafmap.org/), 
