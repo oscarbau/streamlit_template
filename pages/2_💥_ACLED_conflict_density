@@ -1,9 +1,0 @@
-import streamlit as st
-import geopandas as gpd
-import pandas as pd
-import requests
-from shapely.geometry import Point
-import os
-import leafmap.foliumap as leafmap
-
-st.set_page_config(layout="wide")

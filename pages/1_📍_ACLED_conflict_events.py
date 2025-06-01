@@ -6,10 +6,8 @@ from shapely.geometry import Point
 import os
 import leafmap.foliumap as leafmap
 
-st.set_page_config(layout="wide")
 
-# Cache loading of countries dict: name -> ISO3
-@st.cache_data(show_spinner=False)
+
 def load_country_dict():
     world = gpd.read_file("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
     return dict(zip(world['name'], world['ISO3166-1-Alpha-3']))
@@ -39,7 +37,7 @@ def get_conflict(period, iso3):
     url = (
         f'https://api.acleddata.com/acled/read?'
         f'key={api_key}&email={email}&'
-        f'country={iso3}&limit=15000'
+        f'iso3={iso3}&limit=15000'
     )
     response = requests.get(url)
     if response.status_code != 200:
@@ -73,7 +71,7 @@ def get_conflict(period, iso3):
             'latitude': float(record.get('latitude', 0)),
             'longitude': float(record.get('longitude', 0)),
             'geo_precision': record.get('geo_precision'),
-            'iso3': record.get('iso3'),
+            'iso3': record.get('iso3')
         }
         formatted_data.append(formatted_record)
 
@@ -84,11 +82,12 @@ def get_conflict(period, iso3):
     geometry = [Point(xy) for xy in zip(df_period['longitude'], df_period['latitude'])]
     gdf = gpd.GeoDataFrame(df_period, geometry=geometry, crs='EPSG:4326')
 
-
-    mask_gdf = mask_gdf.to_crs(gdf.crs)
-    
     mask_gdf = get_mask_for_iso3(iso3)
+    mask_gdf = mask_gdf.to_crs(gdf.crs)
 
+    centroid = mask_gdf.geometry.unary_union.centroid
+    center_latlon = [centroid.y, centroid.x]
+    
     # Clip points to mask
     geo_acled = gpd.clip(gdf, mask_gdf)
 
@@ -98,7 +97,7 @@ def get_conflict(period, iso3):
 
     geo_acled['event_date'] = geo_acled['event_date'].dt.strftime('%Y-%m-%d')
 
-    return geo_acled
+    return geo_acled, center_latlon
 
 def get_mask_for_iso3(iso3):
         url = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson"
@@ -115,43 +114,80 @@ def main():
     country_dict = load_country_dict()
 
     # Streamlit widgets
-    selected_country = st.selectbox("Select a country", sorted(country_dict.keys()))
+    
+    selected_country = st.selectbox(
+        "Select a country",
+        sorted(country_dict.keys()),
+        index=sorted(country_dict.keys()).index(
+            st.session_state.get("selected_country", sorted(country_dict.keys())[0])
+        ))
     selected_iso3 = country_dict.get(selected_country)
-
     #st.write(f"Selected country: **{selected_country}**")
-    st.write(f"ISO3 code (for mask): **{selected_iso3}**")
+    st.write(f"ISO3 code: **{selected_iso3}**")
 
-    # Date range selector (period)
-    start_date, end_date = st.date_input(
-        "Select date range",
-        value=[pd.to_datetime("2023-01-01"), pd.to_datetime("2023-12-31")],
+    # Separate date inputs for start and end date
+    start_date = st.date_input(
+        "Select start date",
+        value=st.session_state.get("start_date", pd.to_datetime("2025-01-01")),
         max_value=pd.Timestamp.today()
     )
+
+    end_date = st.date_input(
+        "Select end date",
+        value=st.session_state.get("end_date", pd.to_datetime("2025-05-15")),
+        min_value=start_date,  # Prevent end date before start date
+        max_value=pd.Timestamp.today()
+    )
+
     # Convert dates to string format for API (YYYY-MM-DD/YYYY-MM-DD)
     period = f"{start_date.strftime('%Y-%m-%d')}/{end_date.strftime('%Y-%m-%d')}"
 
-   
+    # Build mask path automatically from iso3 (adjust folder structure as needed)
+    mask_path = f"masks/{selected_iso3}.geojson"
 
     fetch_data = st.button("Fetch conflict data")
 
-    if fetch_data:
-        geojson = get_conflict(period, selected_country, selected_iso3)
-        if geojson is not None:
-            st.success(f"Fetched {len(geojson)} conflict events.")
-            # Show heatmap with leafmap
-            m = leafmap.Map(center=[0, 20], zoom=4)
-            m.add_heatmap(
-                geojson,
-                latitude="latitude",
-                longitude="longitude",
-                value="fatalities",
-                name="Conflict Heatmap",
-                radius=20,
-            )
-            m.to_streamlit(height=700)
 
+    if fetch_data:
+        
+        geojson, center_latlon = get_conflict(period, selected_iso3)
+    
+        if geojson is None:
+            st.error("No confict data found.")
+            st.stop()
+
+        # Save to session state, including current inputs to keep state in sync
+        st.session_state["selected_country"] = selected_country
+        st.session_state["start_date"] = start_date
+        st.session_state["end_date"] = end_date
+        st.session_state["geo_acled"] = geojson
+        st.session_state["center_latlon"] = center_latlon
+        st.session_state["data_loaded"] = True
+
+        st.success(f"Fetched {len(geojson)} conflict events.")
+        
+    # This is true just after clicking the button
+    if st.session_state.get("data_loaded"):
+        geo_acled = st.session_state["geo_acled"]
+        center_latlon = st.session_state["center_latlon"]
+
+        def get_color(value):
+            return "red" if value > 0 else "green"
+
+
+        m = leafmap.Map(center=center_latlon, zoom=4)
+        for _, row in geo_acled.iterrows():
+            folium.CircleMarker(
+                location=[row['latitude'], row['longitude']],
+                radius=6,
+                color=get_color(row['fatalities']),
+                fill=True,
+                fill_color=get_color(row['fatalities']),
+                fill_opacity=0.7,
+                popup=f"Fatalities: {row['fatalities']}"
+                ).add_to(m)
+        m.to_streamlit(height=500)
 
 if __name__ == "__main__":
     main()
-
-
+    
