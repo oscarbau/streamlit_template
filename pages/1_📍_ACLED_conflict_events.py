@@ -115,29 +115,32 @@ def main():
 
     # Streamlit widgets
     
-    selected_country = st.selectbox(
-        "Select a country",
-        sorted(country_dict.keys()),
-        index=sorted(country_dict.keys()).index(
-            st.session_state.get("selected_country", sorted(country_dict.keys())[0])
-        ))
-    selected_iso3 = country_dict.get(selected_country)
-    #st.write(f"Selected country: **{selected_country}**")
-    st.write(f"ISO3 code: **{selected_iso3}**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        selected_country = st.selectbox(
+            "Select a country",
+            sorted(country_dict.keys()),
+            index=sorted(country_dict.keys()).index(
+                st.session_state.get("selected_country", sorted(country_dict.keys())[0])
+            ))
+        selected_iso3 = country_dict.get(selected_country)
+        #st.write(f"Selected country: **{selected_country}**")
+        st.write(f"ISO3 code: **{selected_iso3}**")
 
     # Separate date inputs for start and end date
-    start_date = st.date_input(
-        "Select start date",
-        value=st.session_state.get("start_date", pd.to_datetime("2025-01-01")),
-        max_value=pd.Timestamp.today()
-    )
-
-    end_date = st.date_input(
-        "Select end date",
-        value=st.session_state.get("end_date", pd.to_datetime("2025-05-15")),
-        min_value=start_date,  # Prevent end date before start date
-        max_value=pd.Timestamp.today()
-    )
+    with col2:
+        start_date = st.date_input(
+            "Select start date",
+            value=st.session_state.get("start_date", pd.to_datetime("2025-01-01")),
+            max_value=pd.Timestamp.today()
+        )
+    with col3:
+        end_date = st.date_input(
+            "Select end date",
+            value=st.session_state.get("end_date", pd.to_datetime("2025-05-15")),
+            min_value=start_date,  # Prevent end date before start date
+            max_value=pd.Timestamp.today()
+        )
 
     # Convert dates to string format for API (YYYY-MM-DD/YYYY-MM-DD)
     period = f"{start_date.strftime('%Y-%m-%d')}/{end_date.strftime('%Y-%m-%d')}"
