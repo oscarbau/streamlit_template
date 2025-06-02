@@ -176,9 +176,10 @@ def main():
 
         def get_color(value):
             return "red" if value > 0 else "black"
-
-
+        
         m = leafmap.Map(center=center_latlon, zoom=4)
+        labels = ["fatal event", "non fatal event"]
+        colors = ["#FF0000", "#000000"]
         for _, row in geo_acled.iterrows():
             folium.CircleMarker(
                 location=[row['latitude'], row['longitude']],
@@ -187,8 +188,9 @@ def main():
                 fill=True,
                 fill_color=get_color(row['fatalities']),
                 fill_opacity=0.7,
-                popup=f"Fatalities: {row['fatalities']}"
+                popup=f"Fatalities: {row['fatalities']}\nAdmin1: {row['admin1']}\nEvent date: {row['event_date']}"
                 ).add_to(m)
+        m.add_legend(title="Legend", labels=labels, colors=colors)
         m.to_streamlit(height=500)
 
 if __name__ == "__main__":
