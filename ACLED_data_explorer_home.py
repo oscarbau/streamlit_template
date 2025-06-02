@@ -6,14 +6,16 @@ st.set_page_config(layout="wide")
 # Customize the sidebar
 markdown = """
 
-# 🌍 **ACLED Conflict Viewer**
+# 🌍 **ACLED Conflict Explorer**
 
 ### 🛰️ *Geospatial Demo App*
 
 ---
 
 **👤 Oscar Bautista**
+
 *Geospatial Data Specialist*
+
 🔗 [oscarbau.github.io](https://oscarbau.github.io)
 
 """

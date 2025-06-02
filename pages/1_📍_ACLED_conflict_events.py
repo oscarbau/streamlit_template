@@ -108,7 +108,7 @@ def get_mask_for_iso3(iso3):
         return country_mask
 
 def main():
-    st.title("Conflict Data Viewer")
+    st.title("Conflict Data Explorer")
 
     # Load country dictionary
     country_dict = load_country_dict()

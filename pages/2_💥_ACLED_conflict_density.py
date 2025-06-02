@@ -1,7 +1,7 @@
 import streamlit as st
 import leafmap.foliumap as leafmap
 
-st.title("Conflict density")
+st.title("Conflict density Explorer")
 
 if "geo_acled" in st.session_state and "center_latlon":
     geo_acled = st.session_state["geo_acled"]
