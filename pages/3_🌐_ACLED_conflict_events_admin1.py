@@ -42,8 +42,6 @@ if "geo_acled" in st.session_state:
     fatalities_adm1 = boundary_polygons.merge(aggregated_data, on='shapeName', how='left')
     fatalities_adm1['fatalities']=fatalities_adm1['fatalities'].fillna(0)
     max_fat = fatalities_adm1['fatalities'].max()
-    print(fatalities_adm1.columns)
-    print(max_fat)
 
     m = leafmap.Map(center=center_latlon, zoom=4)
 

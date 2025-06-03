@@ -132,12 +132,13 @@ def main():
         start_date = st.date_input(
             "Select start date",
             value=st.session_state.get("start_date", pd.to_datetime("2025-01-01")),
+            min_value="2000-01-01",
             max_value=pd.Timestamp.today()
         )
     with col3:
         end_date = st.date_input(
             "Select end date",
-            value=st.session_state.get("end_date", pd.to_datetime("2025-05-15")),
+            value=st.session_state.get("end_date", pd.Timestamp.today()),
             min_value=start_date,  # Prevent end date before start date
             max_value=pd.Timestamp.today()
         )
