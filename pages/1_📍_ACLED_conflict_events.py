@@ -165,6 +165,7 @@ def main():
         st.session_state["end_date"] = end_date
         st.session_state["geo_acled"] = geojson
         st.session_state["center_latlon"] = center_latlon
+        st.session_state["selected_iso3"] = selected_iso3
         st.session_state["data_loaded"] = True
 
         st.success(f"Fetched {len(geojson)} conflict events.")
