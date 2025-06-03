@@ -28,10 +28,10 @@ if "geo_acled" in st.session_state:
     geo_acled = st.session_state["geo_acled"]
     center_latlon = st.session_state["center_latlon"]
     selected_country = st.session_state["selected_country"]
-    iso3 = st.session_state["selected_iso3"]
+    selected_iso3 = st.session_state["selected_iso3"]
     st.success(f"Adm1 data loaded for {selected_country}")
 
-    boundary_polygons = get_boundaries_ADM1(iso3)
+    boundary_polygons = get_boundaries_ADM1(selected_iso3)
 
     # Perform a spatial join to associate points with polygons
     spatial_join = gpd.sjoin(geo_acled, boundary_polygons, how='inner', predicate='intersects')
