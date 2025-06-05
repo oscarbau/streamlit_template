@@ -2,6 +2,7 @@ import streamlit as st
 import geopandas as gpd
 import requests
 import leafmap.foliumap as leafmap
+import pandas as pd
 
 st.title("Conflict Explorer subnational level")
 
@@ -24,6 +25,7 @@ def get_boundaries_ADM1(iso3):
     return boundary_polygons
 
 
+
 if "geo_acled" in st.session_state:
     geo_acled = st.session_state["geo_acled"]
     center_latlon = st.session_state["center_latlon"]
@@ -31,11 +33,32 @@ if "geo_acled" in st.session_state:
     selected_iso3 = st.session_state["selected_iso3"]
     st.success(f"Adm1 data loaded for {selected_country}")
 
+    with st.expander("See DataFrame"):
+            st.dataframe(geo_acled.drop(columns='geometry'))
+    
+    geo_acled['event_date'] = pd.to_datetime(geo_acled['event_date'], format="%Y-%m-%d", errors='coerce')
+
+
+    geo_acled['month_date'] = geo_acled['event_date'].dt.to_period('M').dt.to_timestamp().dt.strftime('%Y-%m-%d')
+
+    
+
+    # Group by month and admin1
+    monthly_fatalities = geo_acled.groupby(['month_date', 'admin1'])['fatalities'].sum().reset_index()
+
+    # Pivot the table so each admin1 is a column
+    pivot_df = monthly_fatalities.pivot(index='month_date', columns='admin1', values='fatalities')
+    pivot_df = pivot_df.fillna(0)  # Fill NaNs with 0
+    # print(geo_acled["event_date"].min())
+    # print(geo_acled["event_date"].max())
+
+
+
     boundary_polygons = get_boundaries_ADM1(selected_iso3)
 
     # Perform a spatial join to associate points with polygons
     spatial_join = gpd.sjoin(geo_acled, boundary_polygons, how='inner', predicate='intersects')
-    # Group by the 'ADM3_PCODE' and calculate the sum of fatalities
+    # Group by the 'ADM1' and calculate the sum of fatalities
     aggregated_data = spatial_join.groupby('shapeName')['fatalities'].sum().reset_index()
     # print(aggregated_data.head())
     # Merge the aggregated data back into the boundary polygon dataset
@@ -49,9 +72,20 @@ if "geo_acled" in st.session_state:
                 column="fatalities",
                 scheme="NaturalBreaks", 
                 cmap="Reds", 
-                legend_title="Fatalities by Adm1"
+                legend_title="Fatalities by Adm1",
+                layer_name = "Fatalities by Adm1"
             )
-    m.to_streamlit(height=500)
 
+    col1, col2 = st.columns(2)
+
+    with col1:
+        m.to_streamlit(height=300, width=400)
+    
+    
+    with col2:
+        st.bar_chart(pivot_df)
+        # with st.expander("See DataFrame"):
+        #     st.dataframe(pivot_df)
+        
 else:
     st.warning("No conflict data loaded. Please go to the conflict events data page first.")
