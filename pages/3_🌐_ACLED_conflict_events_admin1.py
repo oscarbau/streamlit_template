@@ -34,12 +34,12 @@ if "geo_acled" in st.session_state:
     st.success(f"Adm1 data loaded for {selected_country}")
 
     with st.expander("See DataFrame"):
-            st.dataframe(geo_acled)
+            st.dataframe(geo_acled.drop(columns='geometry'))
     
     geo_acled['event_date'] = pd.to_datetime(geo_acled['event_date'], format="%Y-%m-%d", errors='coerce')
 
 
-    geo_acled['month_date'] = geo_acled['event_date'].dt.to_period('M').dt.to_timestamp()
+    geo_acled['month_date'] = geo_acled['event_date'].dt.to_period('M').dt.to_timestamp().dt.strftime('%Y-%m-%d')
 
     
 
@@ -84,6 +84,8 @@ if "geo_acled" in st.session_state:
     
     with col2:
         st.bar_chart(pivot_df)
+        # with st.expander("See DataFrame"):
+        #     st.dataframe(pivot_df)
         
 else:
     st.warning("No conflict data loaded. Please go to the conflict events data page first.")
