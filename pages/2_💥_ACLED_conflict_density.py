@@ -8,7 +8,9 @@ if "geo_acled" in st.session_state and "center_latlon":
     center_latlon = st.session_state["center_latlon"]
     selected_country = st.session_state["selected_country"]
     start_date = st.session_state["start_date"] 
-    end_date = st.session_state["end_date"] 
+    end_date = st.session_state["end_date"]
+
+    st.success(f"Loaded {len(geojson)} conflict events from {date_first} to {date_last} for {selected_country}")
 
     m = leafmap.Map(center= center_latlon, zoom=4)
     m.add_heatmap(

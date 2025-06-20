@@ -229,7 +229,7 @@ def main():
             st.dataframe(df)
         date_first = geojson["event_date"].min()
         date_last = geojson["event_date"].max()
-        st.success(f"Fetched {len(geojson)} conflict events from {date_first} to {date_last}.")
+        st.success(f"Fetched {len(geojson)} conflict events from {date_first} to {date_last} for {selected_country}.")
         
     
         if geojson is None:
