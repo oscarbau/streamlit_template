@@ -31,7 +31,10 @@ if "geo_acled" in st.session_state:
     center_latlon = st.session_state["center_latlon"]
     selected_country = st.session_state["selected_country"]
     selected_iso3 = st.session_state["selected_iso3"]
-    st.success(f"Adm1 data loaded for {selected_country}")
+    start_date = st.session_state["start_date"] 
+    end_date = st.session_state["end_date"] 
+
+    st.success(f"Adm1 data loaded from {start_date} to {end_date} for {selected_country}")
 
     with st.expander("See DataFrame"):
             st.dataframe(geo_acled.drop(columns='geometry'))

@@ -229,7 +229,7 @@ def main():
             st.dataframe(df)
         date_first = geojson["event_date"].min()
         date_last = geojson["event_date"].max()
-        st.success(f"Fetched data from {date_first} to {date_last}.")
+        st.success(f"Fetched {len(geojson)} conflict events from {date_first} to {date_last}.")
         
     
         if geojson is None:
@@ -245,8 +245,7 @@ def main():
         st.session_state["selected_iso3"] = selected_iso3
         st.session_state["data_loaded"] = True
 
-        st.success(f"Fetched {len(geojson)} conflict events.")
-        
+
     # This is true just after clicking the button
     if st.session_state.get("data_loaded"):
         geo_acled = st.session_state["geo_acled"]
