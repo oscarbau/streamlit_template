@@ -1,8 +1,5 @@
 gdal-bin
 libgdal-dev
-libodbc2
-libodbcinst2
-unixodbc
-unixodbc-common
 proj-bin
+
 
