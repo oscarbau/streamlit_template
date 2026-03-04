@@ -62,6 +62,7 @@ def get_conflict(period, iso, iso3):
     email = os.getenv("ACLED_EMAIL")
     password = os.getenv("ACLED_PASSWORD")
 
+
     def get_access_token(email, password):
         """Get OAuth2 access token from ACLED."""
         response = requests.post(

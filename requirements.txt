@@ -5,3 +5,4 @@ leafmap
 owslib
 streamlit
 mapclassify
+dotenv
