@@ -1,3 +1,4 @@
+
 import streamlit as st
 import geopandas as gpd
 import pandas as pd
@@ -8,6 +9,9 @@ import leafmap.foliumap as leafmap
 import folium
 import time
 import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 st.title("Conflict Data Explorer")
 
@@ -41,6 +45,8 @@ for name, data in country_dict.items():
     acled_name = code_to_acled_name.get(code)
     data["acled_name"] = acled_name if acled_name else None
 
+
+
 @st.cache_data
 def get_conflict(period, iso, iso3):
     # Attempt to load local .env file, if available (only applies locally)
@@ -52,11 +58,26 @@ def get_conflict(period, iso, iso3):
         pass
 
     # Now load environment variables
-    api_key = os.getenv("ACLED_API_KEY")
+    api_key = os.environ.get("ACLED_API_KEY")
     email = os.getenv("ACLED_EMAIL")
+    password = os.getenv("ACLED_PASSWORD")
 
-    if not api_key or not email:
-        raise ValueError("Missing ACLED_API_KEY or ACLED_EMAIL environment variables.")
+    def get_access_token(email, password):
+        """Get OAuth2 access token from ACLED."""
+        response = requests.post(
+            "https://acleddata.com/oauth/token",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "username": email,
+                "password": password,
+                "grant_type": "password",
+                "client_id": "acled"
+            }
+        )
+        if response.status_code == 200:
+            return response.json()["access_token"]
+        else:
+            raise Exception(f"Failed to get token: {response.status_code} {response.text}")
     
     start_date_str, end_date_str = period.split('/')
     start_date = pd.to_datetime(start_date_str).strftime("%Y-%m-%d")
@@ -65,22 +86,27 @@ def get_conflict(period, iso, iso3):
     all_data = []
 
     current_start = start_date
-    # while current_start <= end_date:
-    #     current_end = min(current_start.replace(month=12, day=31), end_date)
+    token = get_access_token(email, password)
 
-    url = (
-        f'https://acleddata.com/api/acled/read?'
-        f'key={api_key}&email={email}&'
-        f'iso={iso}&limit=0&'
-        f'event_date={start_date}|{end_date}&'
-        f'event_date_where=BETWEEN'
+    params = {
+        "iso": iso,
+        "limit": 0,
+        "event_date": f"{start_date}|{end_date}",
+        "event_date_where": "BETWEEN",
+        "_format": "json"
+    }
+
+    response = requests.get(
+        "https://acleddata.com/api/acled/read",
+        params=params,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
     )
 
-    # print(url)
-    
-    response = requests.get(url)
     if response.status_code != 200:
-        st.error(f'ACLED API request failed with status code: {response.status_code}')
+        st.error(f"ACLED API request failed with status code: {response.status_code}")
         return None
 
     data = response.json()
