@@ -202,16 +202,16 @@ selected_iso_num = selected_country_name['country_code']
 with col2:
     start_date = st.date_input(
         "Select start date",
-        value=st.session_state.get("start_date", pd.to_datetime("2025-01-01")),
-        min_value="2000-01-01",
-        max_value=pd.Timestamp.today()
+        value=st.session_state.get("start_date", datetime.date(2025, 1, 1)),
+        min_value=datetime.date(2000, 1, 1),  # ← date object, not a string
+        max_value=datetime.date.today()
     )
 with col3:
     end_date = st.date_input(
         "Select end date",
-        value=st.session_state.get("end_date", pd.Timestamp.today()),
-        min_value=start_date,  # Prevent end date before start date
-        max_value=pd.Timestamp.today()
+        value=st.session_state.get("end_date", datetime.date.today()),
+        min_value=start_date,
+        max_value=datetime.date.today()
     )
 
 # Convert dates to string format for API (YYYY-MM-DD/YYYY-MM-DD)
