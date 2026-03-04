@@ -191,21 +191,28 @@ selected_country = current_selection
 selected_iso3 = country_dict[selected_country]['alpha3']
 selected_iso_num = country_dict[selected_country]['country_code']
 
+# Define the 12-month lag cutoff
+lag_cutoff = datetime.date.today() - datetime.timedelta(days=365)
+
 with col2:
     start_date = st.date_input(
         "Select start date",
         value=st.session_state.get("start_date", datetime.date(2025, 1, 1)),
         min_value=datetime.date(2000, 1, 1),
-        max_value=datetime.date.today()
+        max_value=lag_cutoff
     )
 with col3:
     end_date = st.date_input(
         "Select end date",
-        value=st.session_state.get("end_date", datetime.date.today()),
+        value=st.session_state.get("end_date", lag_cutoff),
         min_value=start_date,
-        max_value=datetime.date.today()
+        max_value=lag_cutoff
     )
 
+st.caption(
+    f"ℹ️ Data available up to {lag_cutoff.strftime('%B %d, %Y')} "
+    "based on our current ACLED access tier (12-month lag)."
+)
 period = f"{start_date.strftime('%Y-%m-%d')}/{end_date.strftime('%Y-%m-%d')}"
 
 
