@@ -69,7 +69,7 @@ def get_conflict(period, iso, iso3):
     #     current_end = min(current_start.replace(month=12, day=31), end_date)
 
     url = (
-        f'https://acledata.com/api/acled/read?'
+        f'https://acleddata.com/api/acled/read?'
         f'key={api_key}&email={email}&'
         f'iso={iso}&limit=0&'
         f'event_date={start_date}|{end_date}&'
